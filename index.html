@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>優雅記事本</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        .sidebar {
+            background: rgba(40, 40, 40, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: calc(100vh - 40px);
+        }
+        .sidebar-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+        .marks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .mark-item {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mark-item:hover {
+            background: rgba(110, 142, 251, 0.1);
+            transform: translateX(5px);
+        }
+        .mark-text {
+            flex: 1;
+            font-size: 13px;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mark-remove {
+            color: #888;
+            font-size: 16px;
+            padding: 0 4px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        .mark-remove:hover {
+            opacity: 1;
+            color: #ff6b6b;
+        }
+        .main-content {
+            background: rgba(40, 40, 40, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .title {
+            font-size: 24px;
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn.delete {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+        .btn.save {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            cursor: pointer;
+        }
+        .btn.save:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+        }
+        .btn.save:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn.save:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding-right: 10px;
+        }
+        .notes-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .notes-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        .notes-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        .note-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .note-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .note-item.active {
+            background: linear-gradient(135deg, rgba(110, 142, 251, 0.2), rgba(167, 119, 227, 0.2));
+            border-color: rgba(110, 142, 251, 0.3);
+        }
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #ffffff;
+            font-size: 15px;
+        }
+        .note-preview {
+            font-size: 13px;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+        .note-area {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            overflow-y: auto;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .note-area:focus {
+            border-color: #6e8efb;
+            box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .note-area[contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: #888;
+        }
+        mark {
+            background-color: rgba(110, 142, 251, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+        .status {
+            color: #888;
+            font-size: 14px;
+            height: 20px;
+            font-weight: 500;
+        }
+        .dynamic-island {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            background: rgba(40, 40, 40, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+        .dynamic-island.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .dynamic-island-message {
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .dynamic-island-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .dynamic-island-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .dynamic-island-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        .dynamic-island-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .dynamic-island-btn.delete {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+        }
+        .dynamic-island-btn.delete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 40px 0;
+            font-size: 15px;
+        }
+        .note-title-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        .note-title-input:focus {
+            outline: none;
+            border-color: #6e8efb;
+            box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            padding-left: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #6e8efb;
+            box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+            font-size: 16px;
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(50, 50, 50, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .search-results.active {
+            display: block;
+        }
+        .search-result-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        .search-result-item:hover {
+            background: rgba(110, 142, 251, 0.1);
+        }
+        .search-result-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .search-result-preview {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.4;
+        }
+        .highlight {
+            background-color: rgba(110, 142, 251, 0.3);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .no-results {
+            padding: 15px;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .sidebar {
+                height: 300px;
+            }
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mark-btn {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .mark-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .mark-btn.active {
+            background: #6e8efb;
+            border-color: #6e8efb;
+        }
+        .text-yellow { color: #ffd700 !important; }
+        .text-red { color: #ff6b6b !important; }
+        .text-green { color: #98fb98 !important; }
+        .text-blue { color: #87ceeb !important; }
+        .text-purple { color: #da70d6 !important; }
+        .text-orange { color: #ffa500 !important; }
+        .text-pink { color: #ffb6c1 !important; }
+        .text-cyan { color: #40e0d0 !important; }
+        .text-gray { color: #a9a9a9 !important; }
+        .highlight-mark {
+            background-color: rgba(110, 142, 251, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 0 2px;
+            display: inline;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .highlight-mark:hover {
+            background-color: rgba(110, 142, 251, 0.5);
+        }
+        .brightness-control {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .theme-toggle-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .theme-toggle-text {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        /* 亮色主題樣式 */
+        body.light-theme {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #333;
+        }
+        body.light-theme .sidebar,
+        body.light-theme .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .title,
+        body.light-theme .sidebar-title,
+        body.light-theme .note-title {
+            color: #333;
+        }
+        body.light-theme .note-preview,
+        body.light-theme .note-area,
+        body.light-theme .note-title-input,
+        body.light-theme .search-input {
+            color: #333;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        body.light-theme .mark-item,
+        body.light-theme .note-item {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .mark-item:hover,
+        body.light-theme .note-item:hover {
+            background: rgba(110, 142, 251, 0.1);
+        }
+        .history-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 380px;
+            height: 100vh;
+            background: rgba(40, 40, 40, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .history-panel.show {
+            right: 0;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .history-title {
+            font-size: 18px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .history-close {
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .history-close:hover {
+            color: #ff6b6b;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .history-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .history-item:hover {
+            background: rgba(110, 142, 251, 0.1);
+            transform: translateX(-5px);
+        }
+        .history-time {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .history-preview {
+            font-size: 13px;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .history-btn {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        .history-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .history-btn.restore {
+            background: rgba(110, 142, 251, 0.2);
+            border-color: rgba(110, 142, 251, 0.3);
+        }
+        .history-btn.restore:hover {
+            background: rgba(110, 142, 251, 0.3);
+        }
+        .history-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+        .history-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        body.light-theme .history-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-left-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .history-title {
+            color: #333;
+        }
+        body.light-theme .history-item {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .history-preview {
+            color: #333;
+        }
+        .save-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: 14px;
+        }
+        .save-status.saved {
+            color: #4CAF50;
+        }
+        .save-status.unsaved {
+            color: #ff6b6b;
+        }
+        .save-icon {
+            font-size: 16px;
+        }
+        .consent-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .consent-content {
+            background: rgba(40, 40, 40, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .consent-title {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .consent-text {
+            color: #e0e0e0;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .consent-text p {
+            margin-bottom: 15px;
+        }
+        .consent-text .en-text {
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .consent-text .author {
+            text-align: center;
+            margin-top: 30px;
+            font-weight: 500;
+        }
+        .consent-text .author .en-text {
+            margin-top: 3px;
+        }
+        .consent-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .consent-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        .consent-btn.accept {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        .consent-btn.decline {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        .consent-btn:hover {
+            transform: translateY(-2px);
+        }
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+        .language-switch:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        body.light-theme .consent-content {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        body.light-theme .consent-title {
+            color: #333;
+        }
+        body.light-theme .consent-text {
+            color: #333;
+        }
+        body.light-theme .consent-btn.decline {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="language-switch" onclick="toggleLanguage()">English</div>
+    <div class="consent-modal" id="consentModal">
+        <div class="consent-content">
+            <div class="consent-title" data-zh="用戶協議" data-en="User Agreement">用戶協議</div>
+            <div class="consent-text">
+                <p>
+                    <div>1. 本應用僅供個人使用，不得用於商業用途。</div>
+                    <div class="en-text">1. This application is for personal use only and may not be used for commercial purposes.</div>
+                </p>
+                <p>
+                    <div>2. 禁止抄襲或未經授權使用本應用的任何部分。</div>
+                    <div class="en-text">2. Plagiarism or unauthorized use of any part of this application is prohibited.</div>
+                </p>
+                <p>
+                    <div>3. 如需引用，請註明作者。</div>
+                    <div class="en-text">3. If you need to cite, please credit the author.</div>
+                </p>
+                <p>
+                    <div>4. 使用本應用即表示您同意遵守以上條款。</div>
+                    <div class="en-text">4. By using this application, you agree to comply with the above terms.</div>
+                </p>
+                <div class="author">
+                    <div>作者：Yoyo</div>
+                    <div class="en-text">Author: Yoyo</div>
+                </div>
+            </div>
+            <div class="consent-buttons">
+                <button class="consent-btn accept" onclick="acceptConsent()" data-zh="同意" data-en="Accept">同意</button>
+                <button class="consent-btn decline" onclick="declineConsent()" data-zh="不同意" data-en="Decline">不同意</button>
+            </div>
+        </div>
+    </div>
+    <div class="container" style="display: none;">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="header">
+                    <h1 class="title">我的筆記</h1>
+                    <button class="btn" onclick="createNewNote()">新增筆記</button>
+                </div>
+                <div class="search-container">
+                    <div class="search-icon">🔍</div>
+                    <input type="text" class="search-input" id="searchInput" placeholder="搜尋筆記..." oninput="searchNotes()">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">筆記列表</div>
+                <div class="notes-list" id="notesList"></div>
+            </div>
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <div class="theme-toggle-icon">🌙</div>
+                <div class="theme-toggle-text">切換主題</div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <input type="text" class="note-title-input" id="noteTitle" placeholder="筆記標題...">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="save-status" id="saveStatus">
+                        <span class="save-icon">💾</span>
+                        <span>已保存</span>
+                    </div>
+                    <button class="btn save" onclick="manualSave()">保存</button>
+                    <button class="btn delete" onclick="deleteCurrentNote()">刪除筆記</button>
+                </div>
+            </div>
+            <div class="note-area" id="noteContent" contenteditable="true" placeholder="在這裡輸入內容..." oninput="handleInput()"></div>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+    <div class="dynamic-island" id="deleteConfirm">
+        <div class="dynamic-island-message">確定要刪除這則筆記嗎？</div>
+        <div class="dynamic-island-buttons">
+            <button class="dynamic-island-btn cancel" onclick="hideDeleteConfirm()">取消</button>
+            <button class="dynamic-island-btn delete" onclick="confirmDelete()">刪除</button>
+        </div>
+    </div>
+    <div class="history-toggle" onclick="toggleHistoryPanel()">🕒</div>
+    <div class="history-panel" id="historyPanel">
+        <div class="history-header">
+            <div class="history-title">編輯歷史</div>
+            <div class="history-close" onclick="toggleHistoryPanel()">×</div>
+        </div>
+        <div class="history-list" id="historyList"></div>
+    </div>
+
+    <script>
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        let currentNoteId = null;
+        let searchTimeout = null;
+        let isUnsaved = false;
+        let currentLanguage = 'zh';
+        const translations = {
+            'zh': {
+                'title': '我的筆記',
+                'newNote': '新增筆記',
+                'search': '搜尋筆記...',
+                'noteList': '筆記列表',
+                'noteTitle': '筆記標題...',
+                'content': '在這裡輸入內容...',
+                'delete': '刪除筆記',
+                'save': '保存',
+                'saved': '已保存',
+                'unsaved': '未保存',
+                'emptyState': '還沒有筆記，點擊「新增筆記」開始記錄',
+                'noResults': '找不到相關筆記',
+                'editHistory': '編輯歷史',
+                'restore': '恢復此版本',
+                'theme': '切換主題',
+                'confirmDelete': '確定要刪除這則筆記嗎？',
+                'cancel': '取消',
+                'confirm': '確定',
+                'defaultTitle': '新筆記',
+                'restored': '已恢復到之前的版本'
+            },
+            'en': {
+                'title': 'My Notes',
+                'newNote': 'New Note',
+                'search': 'Search notes...',
+                'noteList': 'Note List',
+                'noteTitle': 'Note title...',
+                'content': 'Enter content here...',
+                'delete': 'Delete Note',
+                'save': 'Save',
+                'saved': 'Saved',
+                'unsaved': 'Unsaved',
+                'emptyState': 'No notes yet, click "New Note" to start',
+                'noResults': 'No matching notes found',
+                'editHistory': 'Edit History',
+                'restore': 'Restore this version',
+                'theme': 'Toggle Theme',
+                'confirmDelete': 'Are you sure you want to delete this note?',
+                'cancel': 'Cancel',
+                'confirm': 'Confirm',
+                'defaultTitle': 'New Note',
+                'restored': 'Restored to previous version'
+            }
+        };
+        
+        // 語言切換功能
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+            localStorage.setItem('language', currentLanguage);
+        }
+        
+        function updateLanguage() {
+            // 更新語言切換按鈕
+            document.querySelector('.language-switch').textContent = currentLanguage === 'zh' ? 'English' : '中文';
+            
+            // 更新所有帶有data-zh和data-en屬性的元素
+            document.querySelectorAll('[data-zh][data-en]').forEach(element => {
+                element.textContent = element.getAttribute(`data-${currentLanguage}`);
+            });
+            
+            // 更新其他需要翻譯的元素
+            document.querySelector('.title').textContent = translations[currentLanguage].title;
+            document.querySelector('.btn').textContent = translations[currentLanguage].newNote;
+            document.querySelector('.search-input').placeholder = translations[currentLanguage].search;
+            document.querySelector('.sidebar-title').textContent = translations[currentLanguage].noteList;
+            document.querySelector('.note-title-input').placeholder = translations[currentLanguage].noteTitle;
+            document.querySelector('.note-area').setAttribute('placeholder', translations[currentLanguage].content);
+            document.querySelector('.btn.delete').textContent = translations[currentLanguage].delete;
+            document.querySelector('.btn.save').textContent = translations[currentLanguage].save;
+            document.querySelector('.dynamic-island-message').textContent = translations[currentLanguage].confirmDelete;
+            document.querySelector('.dynamic-island-btn.cancel').textContent = translations[currentLanguage].cancel;
+            document.querySelector('.dynamic-island-btn.delete').textContent = translations[currentLanguage].confirm;
+            document.querySelector('.theme-toggle-text').textContent = translations[currentLanguage].theme;
+            document.querySelector('.history-title').textContent = translations[currentLanguage].editHistory;
+            
+            // 更新保存狀態
+            updateSaveStatus();
+        }
+        
+        // 用戶協議相關功能
+        function showConsentModal() {
+            const modal = document.getElementById('consentModal');
+            const container = document.querySelector('.container');
+            
+            if (!localStorage.getItem('consent')) {
+                modal.style.display = 'flex';
+                container.style.display = 'none';
+            } else {
+                modal.style.display = 'none';
+                container.style.display = 'grid';
+            }
+        }
+        
+        function acceptConsent() {
+            localStorage.setItem('consent', 'true');
+            showConsentModal();
+        }
+        
+        function declineConsent() {
+            window.location.href = 'about:blank';
+        }
+        
+        // 修改初始化函數
+        window.onload = function() {
+            showConsentModal();
+            
+            // 恢復保存的語言設置
+            const savedLanguage = localStorage.getItem('language');
+            if (savedLanguage) {
+                currentLanguage = savedLanguage;
+                updateLanguage();
+            }
+            
+            renderNotesList();
+            if (notes.length > 0) {
+                loadNote(notes[0].id);
+            }
+            // 确保contenteditable区域可以正常工作
+            const noteContent = document.getElementById('noteContent');
+            noteContent.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.execCommand('insertLineBreak');
+                }
+            });
+
+            // 添加选择文本事件监听
+            noteContent.addEventListener('mouseup', function() {
+                const selection = window.getSelection();
+                if (selection.toString()) {
+                    // 有文本被选中
+                    document.execCommand('styleWithCSS', false, true);
+                }
+            });
+
+            // 亮度調節功能
+            const brightnessSlider = document.querySelector('.brightness-slider');
+            const brightnessValue = document.querySelector('.brightness-value');
+            
+            brightnessSlider.addEventListener('input', function() {
+                const value = this.value;
+                brightnessValue.textContent = `${value}%`;
+                
+                // 計算亮度值（0-1之間）
+                const brightness = value / 100;
+                
+                // 更新背景和內容的亮度
+                document.body.style.filter = `brightness(${brightness})`;
+                
+                // 保存亮度設置到本地存儲
+                localStorage.setItem('brightness', value);
+            });
+            
+            // 頁面加載時恢復保存的亮度設置
+            const savedBrightness = localStorage.getItem('brightness');
+            if (savedBrightness) {
+                brightnessSlider.value = savedBrightness;
+                brightnessValue.textContent = `${savedBrightness}%`;
+                document.body.style.filter = `brightness(${savedBrightness / 100})`;
+            }
+
+            updateSaveButton();
+        }
+
+        // 搜尋功能
+        function searchNotes() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (query.length === 0) {
+                searchResults.classList.remove('active');
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const results = notes.filter(note => {
+                    const titleMatch = note.title.toLowerCase().includes(query);
+                    const contentMatch = note.content.toLowerCase().includes(query);
+                    return titleMatch || contentMatch;
+                });
+
+                if (results.length === 0) {
+                    searchResults.innerHTML = '<div class="no-results">找不到相關筆記</div>';
+                } else {
+                    searchResults.innerHTML = results.map(note => {
+                        const title = highlightText(note.title, query);
+                        const content = highlightText(note.content.substring(0, 100), query);
+                        return `
+                            <div class="search-result-item" onclick="loadNote('${note.id}')">
+                                <div class="search-result-title">${title}</div>
+                                <div class="search-result-preview">${content}${note.content.length > 100 ? '...' : ''}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                searchResults.classList.add('active');
+            }, 300);
+        }
+
+        // 高亮搜尋文本
+        function highlightText(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // 點擊其他地方關閉搜尋結果
+        document.addEventListener('click', function(e) {
+            const searchResults = document.getElementById('searchResults');
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(e.target)) {
+                searchResults.classList.remove('active');
+            }
+        });
+
+        // 建立新筆記
+        function createNewNote() {
+            const newNote = {
+                id: Date.now().toString(),
+                title: translations[currentLanguage].defaultTitle,
+                content: '',
+                lastModified: new Date().toISOString()
+            };
+            notes.unshift(newNote);
+            saveNotes();
+            renderNotesList();
+            loadNote(newNote.id);
+            isUnsaved = false;
+            updateSaveStatus();
+            updateSaveButton();
+        }
+
+        // 刪除當前筆記
+        function deleteCurrentNote() {
+            if (!currentNoteId) return;
+            const deleteConfirm = document.getElementById('deleteConfirm');
+            deleteConfirm.classList.add('show');
+        }
+
+        // 隱藏刪除確認
+        function hideDeleteConfirm() {
+            const deleteConfirm = document.getElementById('deleteConfirm');
+            deleteConfirm.classList.remove('show');
+        }
+
+        // 確認刪除
+        function confirmDelete() {
+            notes = notes.filter(note => note.id !== currentNoteId);
+            saveNotes();
+            renderNotesList();
+            if (notes.length > 0) {
+                loadNote(notes[0].id);
+            } else {
+                clearEditor();
+            }
+            hideDeleteConfirm();
+        }
+
+        // 點擊其他地方關閉刪除確認
+        document.addEventListener('click', function(e) {
+            const deleteConfirm = document.getElementById('deleteConfirm');
+            const deleteBtn = document.querySelector('.btn.delete');
+            if (!deleteConfirm.contains(e.target) && e.target !== deleteBtn) {
+                hideDeleteConfirm();
+            }
+        });
+
+        // 載入筆記
+        function loadNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                currentNoteId = id;
+                document.getElementById('noteTitle').value = note.title;
+                document.getElementById('noteContent').innerHTML = note.content;
+                updateActiveNoteInList();
+                document.getElementById('searchResults').classList.remove('active');
+                
+                isUnsaved = false;
+                updateSaveStatus();
+                updateSaveButton();
+                
+                // 如果歷史記錄面板是打開的，更新顯示
+                const historyPanel = document.getElementById('historyPanel');
+                if (historyPanel.classList.contains('show')) {
+                    renderHistoryList();
+                }
+            }
+        }
+
+        // 儲存筆記
+        function saveNote() {
+            if (!currentNoteId) return;
+            const note = notes.find(n => n.id === currentNoteId);
+            if (note) {
+                const newContent = document.getElementById('noteContent').innerHTML;
+                const newTitle = document.getElementById('noteTitle').value || '無標題筆記';
+                
+                // 如果內容有變化，才添加到歷史記錄
+                if (newContent !== note.content || newTitle !== note.title) {
+                    // 初始化歷史記錄數組
+                    if (!note.history) {
+                        note.history = [];
+                    }
+                    
+                    // 添加新的歷史記錄
+                    note.history.unshift({
+                        content: newContent,
+                        title: newTitle,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // 只保留最近的10個版本
+                    if (note.history.length > 10) {
+                        note.history = note.history.slice(0, 10);
+                    }
+                }
+                
+                note.title = newTitle;
+                note.content = newContent;
+                note.lastModified = new Date().toISOString();
+                saveNotes();
+                renderNotesList();
+                showStatus(translations[currentLanguage].saved);
+            }
+        }
+
+        // 儲存所有筆記到localStorage
+        function saveNotes() {
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        // 渲染筆記列表
+        function renderNotesList() {
+            const notesList = document.getElementById('notesList');
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="empty-state">還沒有筆記，點擊「新增筆記」開始記錄</div>';
+                return;
+            }
+
+            notesList.innerHTML = notes.map(note => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.content;
+                const textContent = tempDiv.textContent || tempDiv.innerText;
+                return `
+                    <div class="note-item ${note.id === currentNoteId ? 'active' : ''}" 
+                         onclick="loadNote('${note.id}')">
+                        <div class="note-title">${note.title}</div>
+                        <div class="note-preview">${textContent.substring(0, 50)}${textContent.length > 50 ? '...' : ''}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 更新列表中的活動筆記樣式
+        function updateActiveNoteInList() {
+            document.querySelectorAll('.note-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeItem = document.querySelector(`.note-item[onclick="loadNote('${currentNoteId}')"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+        }
+
+        // 顯示狀態資訊
+        function showStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.color = '#52c41a';
+            setTimeout(() => {
+                status.textContent = '';
+            }, 2000);
+        }
+
+        // 清空編輯器
+        function clearEditor() {
+            currentNoteId = null;
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').innerHTML = '';
+        }
+
+        // 自動儲存
+        let autoSaveTimeout;
+        function handleInput() {
+            isUnsaved = true;
+            updateSaveStatus();
+            updateSaveButton();
+        }
+
+        function updateSaveStatus() {
+            const saveStatus = document.getElementById('saveStatus');
+            if (isUnsaved) {
+                saveStatus.className = 'save-status unsaved';
+                saveStatus.innerHTML = `<span class="save-icon">⚠️</span><span>${translations[currentLanguage].unsaved}</span>`;
+            } else {
+                saveStatus.className = 'save-status saved';
+                saveStatus.innerHTML = `<span class="save-icon">💾</span><span>${translations[currentLanguage].saved}</span>`;
+            }
+        }
+
+        // 手動保存功能
+        function manualSave() {
+            if (!currentNoteId || !isUnsaved) return;
+            
+            const note = notes.find(n => n.id === currentNoteId);
+            if (note) {
+                const newContent = document.getElementById('noteContent').innerHTML;
+                const newTitle = document.getElementById('noteTitle').value || translations[currentLanguage].defaultTitle;
+                
+                // 如果內容有變化，才添加到歷史記錄
+                if (newContent !== note.content || newTitle !== note.title) {
+                    // 初始化歷史記錄數組
+                    if (!note.history) {
+                        note.history = [];
+                    }
+                    
+                    // 添加新的歷史記錄
+                    note.history.unshift({
+                        content: newContent,
+                        title: newTitle,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // 只保留最近的10個版本
+                    if (note.history.length > 10) {
+                        note.history = note.history.slice(0, 10);
+                    }
+                }
+                
+                note.title = newTitle;
+                note.content = newContent;
+                note.lastModified = new Date().toISOString();
+                saveNotes();
+                renderNotesList();
+                
+                isUnsaved = false;
+                updateSaveStatus();
+                updateSaveButton();
+                showStatus(translations[currentLanguage].saved);
+            }
+        }
+
+        // 主題切換功能
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.querySelector('.theme-toggle-icon');
+            
+            if (body.classList.contains('light-theme')) {
+                body.classList.remove('light-theme');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-theme');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // 頁面加載時恢復主題設置
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            document.querySelector('.theme-toggle-icon').textContent = '☀️';
+        }
+
+        // 歷史記錄功能
+        function toggleHistoryPanel() {
+            const panel = document.getElementById('historyPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                if (currentNoteId) {
+                    renderHistoryList();
+                } else {
+                    document.getElementById('historyList').innerHTML = `
+                        <div class="empty-state">${translations[currentLanguage].emptyState}</div>
+                    `;
+                }
+            }
+        }
+        
+        function renderHistoryList() {
+            if (!currentNoteId) {
+                document.getElementById('historyList').innerHTML = `
+                    <div class="empty-state">${translations[currentLanguage].emptyState}</div>
+                `;
+                return;
+            }
+            
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note || !note.history || note.history.length === 0) {
+                document.getElementById('historyList').innerHTML = `
+                    <div class="empty-state">${translations[currentLanguage].noResults}</div>
+                `;
+                return;
+            }
+            
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = note.history.map((version, index) => {
+                const date = new Date(version.timestamp);
+                const timeString = date.toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = version.content;
+                const preview = tempDiv.textContent || tempDiv.innerText;
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-time">${timeString}</div>
+                        <div class="history-preview">${preview.substring(0, 100)}${preview.length > 100 ? '...' : ''}</div>
+                        <div class="history-actions">
+                            <button class="history-btn restore" onclick="restoreVersion(${index})">${translations[currentLanguage].restore}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function restoreVersion(versionIndex) {
+            if (!currentNoteId) return;
+            
+            const note = notes.find(n => n.id === currentNoteId);
+            if (!note || !note.history || !note.history[versionIndex]) return;
+            
+            const version = note.history[versionIndex];
+            document.getElementById('noteContent').innerHTML = version.content;
+            saveNote();
+            showStatus(translations[currentLanguage].restored);
+        }
+
+        // 添加頁面關閉提醒
+        window.addEventListener('beforeunload', function(e) {
+            if (isUnsaved) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的更改，確定要離開嗎？';
+            }
+        });
+
+        // 更新保存按鈕狀態
+        function updateSaveButton() {
+            const saveButton = document.querySelector('.btn.save');
+            if (currentNoteId && isUnsaved) {
+                saveButton.disabled = false;
+            } else {
+                saveButton.disabled = true;
+            }
+        }
+
+        // 修改標題輸入事件
+        document.getElementById('noteTitle').addEventListener('input', function() {
+            isUnsaved = true;
+            updateSaveStatus();
+            updateSaveButton();
+        });
+    </script>
+</body>
+</html>
